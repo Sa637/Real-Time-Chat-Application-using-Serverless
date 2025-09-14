@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Serverless Chat</title>
+    <style>
+      body { font-family: system-ui, Arial, sans-serif; max-width: 760px; margin: 20px auto; }
+      #log { border: 1px solid #ddd; height: 300px; overflow-y: auto; padding: 8px; border-radius: 8px; }
+      .msg { margin: 6px 0; }
+      .nick { font-weight: 600; }
+      form { display: flex; gap: 8px; margin-top: 8px; }
+      input, button { padding: 8px; }
+    </style>
+  </head>
+  <body>
+    <h1>Serverless Chat (AWS WebSocket)</h1>
+    <label>Nickname: <input id="nick" value="anon" /></label>
+    <div id="log"></div>
+    <form id="form">
+      <input id="text" placeholder="Type a message..." autofocus />
+      <button>Send</button>
+    </form>
+    <script>
+      // Replace after deploy:
+      const WS_URL = "wss://REPLACE.execute-api.ap-south-1.amazonaws.com/prod";
+
+      const log = document.getElementById('log');
+      const form = document.getElementById('form');
+      const input = document.getElementById('text');
+      const nick = document.getElementById('nick');
+
+      const ws = new WebSocket(WS_URL);
+      ws.onmessage = (evt) => {
+        const {nick, text, timestamp} = JSON.parse(evt.data);
+        const div = document.createElement('div');
+        div.className = 'msg';
+        div.innerHTML = `<span class="nick">${nick}</span>: ${text} <small style="opacity:.6">(${new Date(timestamp).toLocaleTimeString()})</small>`;
+        log.appendChild(div);
+        log.scrollTop = log.scrollHeight;
+      };
+
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (!input.value.trim()) return;
+        ws.send(JSON.stringify({ action: "sendMessage", text: input.value, nick: nick.value }));
+        input.value='';
+      });
+    </script>
+  </body>
+</html>
